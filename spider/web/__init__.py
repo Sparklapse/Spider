@@ -5,9 +5,7 @@ from ._server import Server
 from ._service import WebService
 
 __all__ = [
-    'http',
-    'HTTPRequest',
-    'HTTPResponse',
+    'HTTPRequest', 'HTTPResponse',
     'render',
     'Route',
     'Server',
