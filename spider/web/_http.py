@@ -70,11 +70,17 @@ class HTTPResponse():
 
         self.headers = {
             "Server": "Spider Web",
-            "Content-Type": ' '.join(
-                ("text/html;", f"charset={encoding}")
-            ),
+            "Content-Type": "text/html",
             **headers
         }
+        
+        if self.headers['Content-Type'].startswith('text/'):
+            if not self.headers['Content-Type'].endswith(';'):
+                self.headers['Content-Type'] += ';'
+
+            self.headers['Content-Type'] = ' '.join(
+                (self.headers['Content-Type'], f"charset={encoding}")
+            )
 
         self.content = content
 
