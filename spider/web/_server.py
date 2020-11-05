@@ -41,7 +41,7 @@ class WebServer(Server):
                         request.params
                     )
 
-                    return route(request)
+                    if (r := route(request)): return r
             except Exception as e:
                 return self.route_server_error(e)
         
