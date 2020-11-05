@@ -9,7 +9,7 @@ An asynchronous web server made in pure python
 - [x] Create server with asyncio transports
 - [x] Create basic HTTPRequest and Responses
 - [x] Create basic routing system
-- [ ] Create static file delivery
+- [x] Create static file delivery
 - [ ] Replace `print` outputs with `logging` outputs
 - [ ] Improve the `render` function for rendering html from a file
 
