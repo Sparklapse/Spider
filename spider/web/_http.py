@@ -31,6 +31,10 @@ class HTTPRequest():
         return unquote(self._request[1].split('?')[0])
     
     @property
+    def file(self) -> str:
+        return unquote(self._request[1].split('?')[0].split('/')[-1])
+
+    @property
     def params(self) -> dict:
         """ params
         The parameters passed through the url
@@ -70,17 +74,16 @@ class HTTPResponse():
 
         self.headers = {
             "Server": "Spider Web",
-            "Content-Type": "text/html",
+            "Content-Type": content_type,
             **headers
         }
         
-        if self.headers['Content-Type'].startswith('text/'):
-            if not self.headers['Content-Type'].endswith(';'):
-                self.headers['Content-Type'] += ';'
+        if not self.headers['Content-Type'].endswith(';'):
+            self.headers['Content-Type'] += ';'
 
-            self.headers['Content-Type'] = ' '.join(
-                (self.headers['Content-Type'], f"charset={encoding}")
-            )
+        self.headers['Content-Type'] = ' '.join(
+            (self.headers['Content-Type'], f"charset={encoding}")
+        )
 
         self.content = content
 
