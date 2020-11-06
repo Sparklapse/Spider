@@ -99,7 +99,13 @@ class HTTPResponse():
                 ': '.join((str(_), self.headers[_]))
                 for _ in self.headers.keys()
             ],
-            '\r\n',
-            self.content
+            '\r\n'
         ))
-        return _resp.encode(self.encoding)
+
+        if isinstance(self.content, str):
+            _resp += self.content
+            response = _resp.encode(self.encoding)
+        elif isinstance(self.content, bytes):
+            response = _resp.encode(self.encoding) + self.content
+
+        return response

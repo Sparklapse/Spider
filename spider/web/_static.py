@@ -24,7 +24,7 @@ class StaticDeliverer():
         if not os.path.exists(req_file):
             return None
 
-        f = open(req_file, 'r')
+        f = open(req_file, 'rb')
         mime = mimetypes.guess_type(request.path)[0]
 
         if not mime:
