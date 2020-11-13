@@ -65,7 +65,8 @@ class HTTPRequest():
 class HTTPResponse():
     def __init__(self, content,
                 version="HTTP/1.1", code=200, status="OK",
-                content_type='text/html', encoding="utf-8", headers={}
+                content_type='text/html', encoding="utf-8", headers={},
+                compression="gzip"
             ):
         self.version = version
         self.code = code
@@ -87,12 +88,25 @@ class HTTPResponse():
 
         self.content = content
 
-    # TODO: Create a hash function so you can determine if you can just
-    # return a 304 "Not Modified"
-    def __hash__(self):
-        pass
+    def __call__(self, compression=False):
+        if compression:
+            self.headers['Content-Encoding'] = "gzip"
+            if isinstance(self.content, str):
+                content = gzip.compress(self.content.encode(self.encoding))
+            elif isinstance(self.content, bytes):
+                content = gzip.compress(self.content)
+            else:
+                raise TypeError((
+                    "Content is not bytes or a str."
+                    f"Type is {type(self.content)}"
+                ))
+        else:
+            if isinstance(self.content, str):
+                content = self.content.encode(self.encoding)
+            else:
+                content = self.content
 
-    def __call__(self):
+        
         _resp ='\r\n'.join((
             f"{self.version} {self.code} {self.status}",
             *[
@@ -102,10 +116,6 @@ class HTTPResponse():
             '\r\n'
         ))
 
-        if isinstance(self.content, str):
-            _resp += self.content
-            response = _resp.encode(self.encoding)
-        elif isinstance(self.content, bytes):
-            response = _resp.encode(self.encoding) + self.content
+        response = _resp.encode(self.encoding) + content
 
         return response

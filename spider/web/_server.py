@@ -1,4 +1,3 @@
-import importlib
 import logging
 import re
 
@@ -10,6 +9,8 @@ from ._service import WebService
 
 class WebServer(Server):
     service = WebService
+
+    compression = True
 
     routes = []
     route_not_found = HTTPResponse(
@@ -29,7 +30,7 @@ class WebServer(Server):
         }
     )
 
-    def receiver(self, request: HTTPRequest):        
+    def receiver(self, request: HTTPRequest):
         for route in self.routes:
             try:
                 if (re.fullmatch(route.path, request.path)

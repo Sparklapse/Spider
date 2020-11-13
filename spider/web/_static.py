@@ -1,5 +1,5 @@
 import mimetypes
-import os
+import pathlib
 import re
 
 from ._http import HTTPRequest, HTTPResponse
@@ -17,19 +17,19 @@ class StaticDeliverer():
         mimetypes.init()
 
     def __call__(self, request):
-        req_file = os.path.join(
+        req_file = pathlib.PurePath(
             self.src, re.sub(self.path.rstrip('.*$'), '', request.path)
-        )
+        ).as_posix()
 
-        if not os.path.exists(req_file):
+        if not pathlib.Path(req_file).is_file():
             return None
 
-        f = open(req_file, 'rb')
-        mime = mimetypes.guess_type(request.path)[0]
+        with open(req_file, 'rb') as f:
+            mime = mimetypes.guess_type(request.path)[0]
 
-        if not mime:
-            raise TypeError(f"Was unable to interpret mimetype of {req_file}")
+            if not mime:
+                raise TypeError(f"Was unable to interpret mimetype of {req_file}")
 
-        return HTTPResponse(
-            f.read(), content_type=mime
-        )
+            return HTTPResponse(
+                f.read(), content_type=mime
+            )

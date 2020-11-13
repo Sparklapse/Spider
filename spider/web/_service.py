@@ -13,14 +13,24 @@ class WebService(asyncio.Protocol):
     def data_received(self, data):
         try:
             response = self.server.receiver(
-                HTTPRequest(data.decode())
+                request := HTTPRequest(data.decode())
             )
+            if not isinstance(response, HTTPResponse):
+                raise TypeError((
+                    f"Response was not a HTTPResponse."
+                    f"Returned {type(response)}"
+                ))
         except ValueError:
-            # TODO: return a 400 bad request
-            pass
+            return self.server.route_not_found
         else:
             if callable(response):
-                self._transport.write(response())
+                if "gzip" not in request.headers['Accept-Encoding']:
+                    do_compression = False
+                else:
+                    do_compression = self.server.compression
+                self._transport.write(response(
+                    compression=do_compression
+                ))
             else:
                 self._transport.abort()
         finally:
