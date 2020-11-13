@@ -15,6 +15,12 @@ class StaticDeliverer():
         self.src = src
 
         mimetypes.init()
+        print(
+            Warning((
+                "You should only use the static deliverer for debugging!\n"
+                "Use something like nginx instead. You have been warned!"
+            ))
+        )
 
     def __call__(self, request):
         req_file = pathlib.PurePath(
