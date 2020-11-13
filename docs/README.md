@@ -10,6 +10,8 @@ An asynchronous web server made in pure python
 - [x] Create basic HTTPRequest and Responses
 - [x] Create basic routing system
 - [x] Create static file delivery
+- [x] Implement gzip compression
+- [ ] Implement ssl
 - [ ] Replace `print` outputs with `logging` outputs
 - [ ] Improve the `render` function for rendering html from a file
 
