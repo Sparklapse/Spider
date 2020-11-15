@@ -1,18 +1,14 @@
 import asyncio
-import enum
-import gzip
-import ssl
 
 
 class Server():
     service = None
 
     def __init__(
-            self, service: type = None, ssl_ctx=None,
+            self, service: type = None,
             host: str = '0.0.0.0', port: int = 8080):
 
         self.service = service or self.service
-        self.ssl_ctx = ssl_ctx
         self.host = host
         self.port = port
 
@@ -25,8 +21,7 @@ class Server():
         loop = asyncio.get_running_loop()
         _server = await loop.create_server(
             lambda: self.service(self),
-            self.host, self.port,
-            ssl=self.ssl_ctx
+            self.host, self.port
         )
 
         async with _server:
