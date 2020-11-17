@@ -6,6 +6,12 @@ from ._http import HTTPRequest, HTTPResponse
 
 
 class StaticDeliverer():
+    """ Static Deliverer
+    A way to deliver static files (eg. images, js, etc.) without
+    something nginx. This class is only designed to be used in debug
+    environments. When deploying, use something like nginx to deliver
+    static files.
+    """
     def __init__(
             self, prefix=None, domain=r".*",
             src="./"):
@@ -15,12 +21,6 @@ class StaticDeliverer():
         self.src = src
 
         mimetypes.init()
-        print(
-            Warning((
-                "You should only use the static deliverer for debugging!\n"
-                "Use something like nginx instead. You have been warned!"
-            ))
-        )
 
     def __call__(self, request):
         req_file = pathlib.PurePath(
