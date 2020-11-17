@@ -92,9 +92,9 @@ class HTTPResponse():
         if compression:
             self.headers['Content-Encoding'] = "gzip"
             if isinstance(self.content, str):
-                content = gzip.compress(self.content.encode(self.encoding))
+                content = gzip.compress(self.content.encode(self.encoding), 5)
             elif isinstance(self.content, bytes):
-                content = gzip.compress(self.content)
+                content = gzip.compress(self.content, 5)
             else:
                 raise TypeError((
                     "Content is not bytes or a str."
