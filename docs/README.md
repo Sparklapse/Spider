@@ -11,7 +11,8 @@ An asynchronous web server made in pure python
 - [x] Create basic routing system
 - [x] Create static file delivery
 - [x] Implement gzip compression
-- [ ] Implement ssl
+- [ ] ~~Implement ssl~~ (Leave up tp nginx instead)
+- [x] Create multi-threaded workers for serving
 - [ ] Replace `print` outputs with `logging` outputs
 - [ ] Improve the `render` function for rendering html from a file
 
