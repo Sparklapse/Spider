@@ -5,20 +5,18 @@ import multiprocessing
 
 
 class Server():
-    service = None
-
     def __init__(
             self, service: type = None, max_workers = 10,
             host: str = '', port: int = 8080):
 
-        self.service = service or self.service
+        self.service = getattr(self, 'service', None) or self.service
         self.worker_max = max_workers
         self.worker_able = True if (
                 sys.platform.startswith('linux') or 
                 sys.platform.startswith('darwin')
             ) else False
-        self.host = host
-        self.port = port
+        self.host = getattr(self, 'host', None) or host
+        self.port = getattr(self, 'port', None) or port
 
         if self.service == None:
             raise ValueError("No service provided")
