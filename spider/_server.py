@@ -59,7 +59,7 @@ class Server():
                 raise TypeError(("serve() in current context missing some"
                                  "required argument"))
         else:
-            if not self.sock:
+            if not getattr(self, 'sock', None):
                 self.sock = socket.socket()
                 self.sock.bind((self.host, self.port))
 
