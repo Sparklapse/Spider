@@ -14,6 +14,9 @@ class HTTPRequest():
             if ': ' in _h:
                 self.headers[_h.split(': ')[0]] = ': '.join(_h.split(': ')[1:])
 
+    def __repr__(self):
+        return f"{self.method} {self.domain} {self.path}"
+
     @property
     def method(self) -> str:
         """ method
@@ -63,10 +66,11 @@ class HTTPRequest():
     
 
 class HTTPResponse():
+    compression_level = 5
+
     def __init__(self, content,
                 version="HTTP/1.1", code=200, status="OK",
-                content_type='text/html', encoding="utf-8", headers={},
-                compression="gzip"
+                content_type='text/html', encoding="utf-8", headers={}
             ):
         self.version = version
         self.code = code
@@ -92,9 +96,12 @@ class HTTPResponse():
         if compression:
             self.headers['Content-Encoding'] = "gzip"
             if isinstance(self.content, str):
-                content = gzip.compress(self.content.encode(self.encoding), 5)
+                content = gzip.compress(
+                    self.content.encode(self.encoding),
+                    self.compression_level
+                )
             elif isinstance(self.content, bytes):
-                content = gzip.compress(self.content, 5)
+                content = gzip.compress(self.content, self.compression_level)
             else:
                 raise TypeError((
                     "Content is not bytes or a str."
@@ -119,3 +126,6 @@ class HTTPResponse():
         response = _resp.encode(self.encoding) + content
 
         return response
+
+    def __repr__(self):
+        return f"{self.headers['Content-Type']} {self.code} {self.status}"
