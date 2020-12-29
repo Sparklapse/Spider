@@ -24,7 +24,7 @@ class WebService(asyncio.Protocol):
             return self.server.route_not_found
         else:
             if callable(response):
-                if self.server.compression:
+                if getattr(self.server, 'compression', None):
                     try:
                         do_compression = \
                             "gzip" in request.headers['Accept-Encoding']
