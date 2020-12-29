@@ -1,3 +1,4 @@
+import json
 import gzip
 from urllib.parse import unquote, parse_qs
 
@@ -9,6 +10,7 @@ class HTTPRequest():
             raise ValueError("Invalid Request")
 
         self.headers = {}
+        self.content = '\r\n\r\n'.join(request.split('\r\n\r\n')[1:])
         _headers = request.split('\r\n\r\n')[0].splitlines()[1:]
         for _h in _headers:
             if ': ' in _h:
@@ -16,6 +18,13 @@ class HTTPRequest():
 
     def __repr__(self):
         return f"{self.method} {self.domain} {self.path}"
+
+    @property
+    def json(self) -> dict or list:
+        try:
+            return json.loads(self.content)
+        except:
+            return {}
 
     @property
     def method(self) -> str:
