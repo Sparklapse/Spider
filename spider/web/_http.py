@@ -4,20 +4,23 @@ from urllib.parse import unquote, parse_qs
 
 
 class HTTPRequest():
-    def __init__(self, request):
+    def __init__(self, request, host: str):
         self._request = request.splitlines()[0].split(' ')
         if len(self._request) != 3:
             raise ValueError("Invalid Request")
+
+        self._host = host or ""
 
         self.headers = {}
         self.content = '\r\n\r\n'.join(request.split('\r\n\r\n')[1:])
         _headers = request.split('\r\n\r\n')[0].splitlines()[1:]
         for _h in _headers:
             if ': ' in _h:
-                self.headers[_h.split(': ')[0]] = ': '.join(_h.split(': ')[1:])
+                self.headers[_h.split(': ')[0].lower()] = \
+                    ': '.join(_h.split(': ')[1:])
 
     def __repr__(self):
-        return f"{self.method} {self.domain} {self.path}"
+        return f"{self.method} {self.host} {self.path}"
 
     @property
     def json(self) -> dict or list:
@@ -66,12 +69,15 @@ class HTTPRequest():
         return self._request[2]
     
     @property
-    def domain(self) -> str:
-        """ domain
-        The domain being requested
+    def host(self) -> str:
+        """ host
+        The host being requested
         (eg. example.com)
         """
-        return self.headers['Host'].split(':')[0]
+        if hasattr(self.headers, 'host'):
+            return self.headers['host'].split(':')[0]
+        else:
+            return self._host
     
 
 class HTTPResponse():

@@ -55,7 +55,7 @@ class RouteManager():
         for route in self.routes:
             try:
                 if (re.fullmatch(route.path, request.path)
-                        and re.fullmatch(route.domain, request.domain)):
+                        and re.fullmatch(route.domain, request.host)):
                     if (r := route(request)): return r
             except Exception as e:
                 return self.server_error(e)

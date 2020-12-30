@@ -34,10 +34,10 @@ class WebServer(Server):
         for route in self.routes:
             try:
                 if (re.fullmatch(route.path, request.path)
-                        and re.fullmatch(route.domain, request.domain)):
+                        and re.fullmatch(route.domain, request.host)):
                     print(
                         request.method,
-                        request.domain,
+                        request.host,
                         request.path,
                         request.params
                     )
