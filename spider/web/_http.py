@@ -12,7 +12,7 @@ class HTTPRequest():
         self._host = host or ""
 
         self.headers = {}
-        self.content = '\r\n\r\n'.join(request.split('\r\n\r\n')[1:])
+        self.body = '\r\n\r\n'.join(request.split('\r\n\r\n')[1:])
         _headers = request.split('\r\n\r\n')[0].splitlines()[1:]
         for _h in _headers:
             if ': ' in _h:
@@ -25,7 +25,7 @@ class HTTPRequest():
     @property
     def json(self) -> dict or list:
         try:
-            return json.loads(self.content)
+            return json.loads(self.body)
         except:
             return {}
 
