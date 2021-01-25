@@ -15,7 +15,8 @@ class Server():
         if self.service == None:
             raise ValueError("No service provided")
 
-        self.start()
+        start_callback = getattr(self, 'start', None)
+        if callable(start_callback): start_callback()
 
     async def _tcp_server(self):
         loop = asyncio.get_running_loop()

@@ -7,26 +7,33 @@ from http.server import BaseHTTPRequestHandler
 from io import BytesIO
 
 
+PROTOCOL_VERSION = "HTTP/1.1"
+
 class HTTPRequest:
     command: str
     path: str
     request_version: str
     headers: email.message.Message
+    client: tuple
 
     default_request_version = "HTTP/0.9"
-    protocol_version = "HTTP/1.0"
+    protocol_version = PROTOCOL_VERSION
     MessageClass = http.client.HTTPMessage
 
     def __new__(cls, *args, **kwargs):
         cls.parse_request = BaseHTTPRequestHandler.parse_request
         return super().__new__(cls)
 
-    def __init__(self, request):
+    def __init__(self, request, client):
         self.rfile = BytesIO(request.encode())
         self.raw_requestline = self.rfile.readline()
         self.error_code = self.error_message = None
         self.expect_100 = False
+        self.client = client
         self.parse_request()
+    
+    def __repr__(self) -> str:
+        return f"{self.protocol_version} {self.path} {self.command} {self.client}"
 
     def send_error(self, code, message):
         self.error_code = code
@@ -39,7 +46,7 @@ class HTTPRequest:
 class HTTPResponse:
     sys_version = "Python/" + sys.version.split()[0]
     server_version = "Spider/0.0.1"
-    protocol_version = "HTTP/1.0"
+    protocol_version = PROTOCOL_VERSION
 
     responses = {
         v: (v.phrase, v.description)

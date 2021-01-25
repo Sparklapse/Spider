@@ -43,7 +43,12 @@ class WebService(asyncio.Protocol):
         self._transport = transport
 
     def data_received(self, data):
-        request = HTTPRequest(data.decode())
+        request = HTTPRequest(
+            data.decode(), self._transport.get_extra_info('peername')
+        )
+
+        message_callback = getattr(self.server, 'handler', None)
+        if callable(message_callback): message_callback(request)
 
         # Route management
         response = None
@@ -65,7 +70,10 @@ class WebService(asyncio.Protocol):
                 response = ready_response(self.server.routes[404])
         
         self._transport.write(response)
+        if self._transport.can_write_eof():
+            self._transport.write_eof()
         self._transport.close()
 
     def connection_lost(self, exc):
-        self.server.lost(exc)
+        lost_callback = getattr(self.server, 'lost', None)
+        if lost_callback: lost_callback(exc)
