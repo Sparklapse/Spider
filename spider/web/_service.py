@@ -1,61 +1,71 @@
+import re
 import asyncio
 
 from ._http import HTTPRequest, HTTPResponse
 
 
+def ready_response(response, request=None, recurse=False):
+    if isinstance(response, HTTPResponse):
+        return response.read()
+    elif isinstance(response, bytes):
+        return response
+    elif isinstance(response, str):
+        return response.encode()
+    elif isinstance(response, int) or isinstance(response, float):
+        return str(response).encode()
+    elif callable(response) and not recurse:
+        _resp = response(request)
+        return ready_response(_resp, recurse=True)
+    else:
+        raise TypeError("Couldn't ready response")
+
 class WebService(asyncio.Protocol):
     def __init__(self, server):
         self.server = server
+
+        if not hasattr(server, 'routes'):
+            raise ValueError("No routes set!")
+
+        if 404 not in self.server.routes.keys():
+            self.server.routes[404] = HTTPResponse(
+                "404: Not Found", code=404, headers={
+                    "Content-Type": "text/plain"
+                }
+            )
+        if 500 not in self.server.routes.keys():
+            self.server.routes[500] = HTTPResponse(
+                "500: Server Error", code=500, headers={
+                    "Content-Type": "text/plain"
+                }
+            )
 
     def connection_made(self, transport):
         self._transport = transport
 
     def data_received(self, data):
-        try:
-            response = self.server.receiver(
-                request := HTTPRequest(
-                    data.decode(),
-                    ':'.join(
-                        [
-                            str(_)
-                            for _ in self._transport.get_extra_info('sockname')
-                        ]
-                    )
-                )
-            )
-            if not isinstance(response, HTTPResponse):
-                raise TypeError((
-                    f"Response was not a HTTPResponse."
-                    f"Returned {type(response)}"
-                ))
-        except ValueError:
-            return self.server.route_not_found
-        else:
-            if callable(response):
-                if getattr(self.server, 'compression', None):
-                    try:
-                        do_compression = \
-                            "gzip" in request.headers['Accept-Encoding']
-                    except KeyError:
-                        do_compression = False
-                else:
-                    do_compression = False
-                
-                self._transport.write(response(
-                    compression=do_compression
-                ))
-            else:
-                self._transport.abort()
-        finally:
-            self._transport.close()
-    
-    # Reserved for HTTP3
-    def datagram_received(self, data, addr):
-        response = self.server.receiver(
-            HTTPRequest(data.decode())
-        )
+        request = HTTPRequest(data.decode())
 
-        self.transport.sendto(response(), addr)
+        # Route management
+        response = None
+        for route in self.server.routes.keys():
+            try:
+                if (not isinstance(route, int) and 
+                        (re.fullmatch(route, request.path))):
+                    response = ready_response(
+                        self.server.routes[route], request
+                    )
+                    break
+            except Exception as e:
+                if isinstance(self.server.routes[500], HTTPResponse):
+                    response = ready_response(self.server.routes[500])
+                break
+        
+        if not response:
+            if isinstance(self.server.routes[404], HTTPResponse):
+                response = ready_response(self.server.routes[404])
+        
+        self._transport.write(response)
+        self._transport.close()
 
     def connection_lost(self, exc):
         self.server.lost(exc)

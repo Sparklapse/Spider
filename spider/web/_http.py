@@ -1,146 +1,141 @@
-import json
+import email.message
 import gzip
-from urllib.parse import unquote, parse_qs
+import http.client
+import sys
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler
+from io import BytesIO
 
 
-class HTTPRequest():
-    def __init__(self, request, host: str):
-        self._request = request.splitlines()[0].split(' ')
-        if len(self._request) != 3:
-            raise ValueError("Invalid Request")
+class HTTPRequest:
+    command: str
+    path: str
+    request_version: str
+    headers: email.message.Message
 
-        self._host = host or ""
+    default_request_version = "HTTP/0.9"
+    protocol_version = "HTTP/1.0"
+    MessageClass = http.client.HTTPMessage
 
-        self.headers = {}
-        self.body = '\r\n\r\n'.join(request.split('\r\n\r\n')[1:])
-        _headers = request.split('\r\n\r\n')[0].splitlines()[1:]
-        for _h in _headers:
-            if ': ' in _h:
-                self.headers[_h.split(': ')[0].lower()] = \
-                    ': '.join(_h.split(': ')[1:])
+    def __new__(cls, *args, **kwargs):
+        cls.parse_request = BaseHTTPRequestHandler.parse_request
+        return super().__new__(cls)
 
-    def __repr__(self):
-        return f"{self.method} {self.host} {self.path}"
+    def __init__(self, request):
+        self.rfile = BytesIO(request.encode())
+        self.raw_requestline = self.rfile.readline()
+        self.error_code = self.error_message = None
+        self.expect_100 = False
+        self.parse_request()
 
-    @property
-    def json(self) -> dict or list:
+    def send_error(self, code, message):
+        self.error_code = code
+        self.error_message = message
+
+    def handle_expect_100(self):
+        self.expect_100 = True
+        return True
+
+class HTTPResponse:
+    sys_version = "Python/" + sys.version.split()[0]
+    server_version = "Spider/0.0.1"
+    protocol_version = "HTTP/1.0"
+
+    responses = {
+        v: (v.phrase, v.description)
+        for v in HTTPStatus.__members__.values()
+    }
+
+    def __new__(cls, *args, **kwargs):
+        cls.send_response_only = BaseHTTPRequestHandler.send_response_only
+        cls.send_header = BaseHTTPRequestHandler.send_header
+        cls.flush_headers = BaseHTTPRequestHandler.flush_headers
+        cls.end_headers = BaseHTTPRequestHandler.end_headers
+
+        cls.version_string = BaseHTTPRequestHandler.version_string
+        cls.date_time_string = BaseHTTPRequestHandler.date_time_string
+
+        return super().__new__(cls)
+
+    def __init__(self, response, code=200, version="HTTP/1.1", headers={},
+            compress=True, compression_amount=5):
+
+        self.response_code = code
+        self.compress = compress
+        self.compression_amount = compression_amount
+        self.headers = headers
+
+        # Validate HTTP version
         try:
-            return json.loads(self.body)
-        except:
-            return {}
+            if not version.startswith('HTTP/'):
+                raise ValueError
+            base_version_number = version.split('/', 1)[1]
+            version_number = base_version_number.split(".")
+            if len(version_number) != 2:
+                raise ValueError
+            version_number = int(version_number[0]), int(version_number[1])
+        except (ValueError, IndexError):
+            self.send_error(
+                HTTPStatus.BAD_REQUEST,
+                "Bad request version (%r)" % version)
+            return False
+        if version_number >= (1, 1) and self.protocol_version >= "HTTP/1.1":
+            self.close_connection = False
+        if version_number >= (2, 0):
+            self.send_error(
+                HTTPStatus.HTTP_VERSION_NOT_SUPPORTED,
+                "Invalid HTTP version (%s)" % base_version_number)
+            return False
+        self.request_version = version
 
-    @property
-    def method(self) -> str:
-        """ method
-        The method used when making the request
-        (eg. GET, POST, DELETE, PUT, etc.)
-        """
-        return self._request[0]
-    
-    @property
-    def path(self) -> str:
-        """ path
-        The path of the url
-        (eg. /foo/bar)
-        """
-        return unquote(self._request[1].split('?')[0])
-    
-    @property
-    def file(self) -> str:
-        return unquote(self._request[1].split('?')[0].split('/')[-1])
-
-    @property
-    def params(self) -> dict:
-        """ params
-        The parameters passed through the url
-        (eg. ?foo=bar&car=zar -> {"foo": "bar", "car": "zar"})
-        """
-        if '?' in self._request[1]:
-            return parse_qs(self._request[1].split('?')[1])
+        # Validate content type
+        if isinstance(response, str):
+            self.content = response.encode()
+        elif isinstance(response, bytes):
+            self.content = response
         else:
-            None
-
-    @property
-    def version(self) -> str:
-        """ version
-        The request version used
-        (eg. HTTP/1.1)
-        """
-        return self._request[2]
+            raise ValueError("Content is not bytes-like or encodable")
     
-    @property
-    def host(self) -> str:
-        """ host
-        The host being requested
-        (eg. example.com)
-        """
-        if hasattr(self.headers, 'host'):
-            return self.headers['host'].split(':')[0]
-        else:
-            return self._host
-    
+    def send_response(self, code, message=None):
+        self.send_response_only(code, message)
+        self.send_header('Server', self.version_string())
+        self.send_header('Date', self.date_time_string())
 
-class HTTPResponse():
-    compression_level = 5
+    def send_error(self, code, message):
+        self.error_code = code
+        self.error_message = message
 
-    def __init__(self, content,
-                version="HTTP/1.1", code=200, status="OK",
-                content_type='text/html', encoding="utf-8", headers={}
-            ):
-        self.version = version
-        self.code = code
-        self.status = status
-        self.encoding = encoding
-
-        self.headers = {
-            "Server": "Spider Web",
-            "Content-Type": content_type,
-            **headers
-        }
+    def ready_response(self):
+        # Write the HTTP response
+        self.send_response(self.response_code)
         
-        if not self.headers['Content-Type'].endswith(';'):
-            self.headers['Content-Type'] += ';'
+        # Add any custom headers and write
+        for header in self.headers:
+            self.send_header(header, self.headers[header])
 
-        self.headers['Content-Type'] = ' '.join(
-            (self.headers['Content-Type'], f"charset={encoding}")
-        )
+        # If we're using compression, notify in header
+        if self.compress:
+            self.send_header("Content-Encoding", "gzip")
 
-        self.content = content
-
-    def __call__(self, compression=False):
-        if compression:
-            self.headers['Content-Encoding'] = "gzip"
-            if isinstance(self.content, str):
-                content = gzip.compress(
-                    self.content.encode(self.encoding),
-                    self.compression_level
-                )
-            elif isinstance(self.content, bytes):
-                content = gzip.compress(self.content, self.compression_level)
-            else:
-                raise TypeError((
-                    "Content is not bytes or a str."
-                    f"Type is {type(self.content)}"
-                ))
+    def ready_content(self):
+        # Write the content and compress if compression enabled
+        if self.compress:
+            self.wfile.write(gzip.compress(
+                self.content, self.compression_amount
+            ))
         else:
-            if isinstance(self.content, str):
-                content = self.content.encode(self.encoding)
-            else:
-                content = self.content
+            self.wfile.write(self.content)
 
-        
-        _resp ='\r\n'.join((
-            f"{self.version} {self.code} {self.status}",
-            *[
-                ': '.join((str(_), self.headers[_]))
-                for _ in self.headers.keys()
-            ],
-            '\r\n'
-        ))
+    def read(self):
+        # Open a new BytesIO in memory
+        self.wfile = BytesIO()
 
-        response = _resp.encode(self.encoding) + content
+        self.ready_response()
+        self.end_headers()
+        self.ready_content()
 
-        return response
+        # Move the pointer back to start for reading
+        self.wfile.seek(0)
 
-    def __repr__(self):
-        return f"{self.headers['Content-Type']} {self.code} {self.status}"
+        # Return the final response
+        return self.wfile.read()

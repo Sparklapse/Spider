@@ -1,20 +1,14 @@
 import sys
 import asyncio
 import socket
-import multiprocessing
 
 
 class Server():
     def __init__(
-            self, service: type = None, max_workers = 10,
+            self, service: type = None,
             host: str = '', port: int = 8080):
 
         self.service = getattr(self, 'service', None) or self.service
-        self.worker_max = max_workers
-        self.worker_able = True if (
-                sys.platform.startswith('linux') or 
-                sys.platform.startswith('darwin')
-            ) else False
         self.host = getattr(self, 'host', None) or host
         self.port = getattr(self, 'port', None) or port
 
@@ -38,9 +32,9 @@ class Server():
         Called when the server starts.
         """
 
-    def receiver(self, data):
-        """ Receiver
-        Called whenever the server service receives data.
+    def handler(self, data):
+        """ Handler
+        Called to handle data received by a client.
         """
 
     def lost(self, exception):
@@ -49,19 +43,9 @@ class Server():
         """
 
     def serve(self, **kwargs):
-        if self.worker_able:
-            try:
-                self.sock = socket.fromfd(
-                    kwargs['sockfn'],
-                    family=kwargs['sfamily'], type=kwargs['stype']
-                )
-            except KeyError:
-                raise TypeError(("serve() in current context missing some"
-                                 "required argument"))
-        else:
-            if not getattr(self, 'sock', None):
-                self.sock = socket.socket()
-                self.sock.bind((self.host, self.port))
+        if not getattr(self, 'sock', None):
+            self.sock = socket.socket()
+            self.sock.bind((self.host, self.port))
 
         loop = asyncio.get_event_loop()
         loop.create_task(self._tcp_server())
@@ -74,42 +58,10 @@ class Server():
             loop.stop()
             loop.run_until_complete(loop.shutdown_asyncgens())
 
-    def create_workers(self):
-        if not self.worker_able:
-            raise OSError("Unsupported OS! Please serve on a single thread")
-        sock = socket.socket(
-            family=socket.AF_INET,
-            type=socket.SOCK_STREAM
-        )
-        sock.bind((self.host, self.port))
-        sock.setblocking(True)
-        sock.set_inheritable(True)
-
-        self.workers = []
-
-        for _ in range(self.worker_max):
-            p = multiprocessing.Process(
-                target=self.serve,
-                args=(
-                    sock.fileno(),
-                    sock.family,
-                    sock.type
-                )
-            )
-            p.start()
-            self.workers.append(p)
-
-        while True:
-            pass
-
 def serve(server: type):
     print("Serving", server.__name__)
     print("Press Ctrl+C to stop serving")
     _s = server()
-
-    sock = socket.socket()
-    sock.bind((_s.host, _s.port))
-    _s.sock = sock
 
     _s.serve()
     print("Closing")
