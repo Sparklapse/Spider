@@ -1,3 +1,4 @@
+import json
 import email.message
 import gzip
 import http.client
@@ -5,6 +6,7 @@ import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from io import BytesIO
+from urllib import parse
 
 
 PROTOCOL_VERSION = "HTTP/1.1"
@@ -14,6 +16,7 @@ class HTTPRequest:
     path: str
     request_version: str
     headers: email.message.Message
+    body: str
     client: tuple
 
     default_request_version = "HTTP/0.9"
@@ -31,6 +34,7 @@ class HTTPRequest:
         self.expect_100 = False
         self.client = client
         self.parse_request()
+        self.body = self.rfile.read()
     
     def __repr__(self) -> str:
         return f"{self.protocol_version} {self.path} {self.command} {self.client}"
@@ -42,6 +46,18 @@ class HTTPRequest:
     def handle_expect_100(self):
         self.expect_100 = True
         return True
+
+    @property
+    def params(self) -> dict:
+        _path = parse.urlparse(self.path)
+        return parse.parse_qs(_path.query, True)
+    
+    @property
+    def body_json(self) -> dict:
+        try:
+            return json.loads(self.body)
+        except:
+            return None
 
 class HTTPResponse:
     sys_version = "Python/" + sys.version.split()[0]
@@ -84,14 +100,14 @@ class HTTPResponse:
         except (ValueError, IndexError):
             self.send_error(
                 HTTPStatus.BAD_REQUEST,
-                "Bad request version (%r)" % version)
+                f"Bad request version ({version})")
             return False
         if version_number >= (1, 1) and self.protocol_version >= "HTTP/1.1":
             self.close_connection = False
         if version_number >= (2, 0):
             self.send_error(
                 HTTPStatus.HTTP_VERSION_NOT_SUPPORTED,
-                "Invalid HTTP version (%s)" % base_version_number)
+                f"Invalid HTTP version ({base_version_number})")
             return False
         self.request_version = version
 
