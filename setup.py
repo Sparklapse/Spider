@@ -2,9 +2,20 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="Spider",
-    version="0.0.1",
+    name="Spider-Sparklapse",
+    version="1.0.0",
     author="mr-josh",
-    description="Asynchronous web and socket server",
+    author_email="mr-josh@sparklapse.com",
+    url="https://github.com/Sparklapse/Spider",
+    description="Asynchronous python server",
+    long_description=open("./docs/README.md", "r", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+        "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    ],
     packages=find_packages(),
+    python_requires=">=3.9",
 )
