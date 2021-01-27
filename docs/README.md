@@ -1,4 +1,5 @@
-# Spider
+# Spiders
+V: `0.1.0`<br>
 An asynchronous server made in pure python
 
 # Installation
@@ -8,7 +9,9 @@ An asynchronous server made in pure python
 - A spare brain cell 🧠
 
 ## Install
-Coming soon...
+`pip install Spiders`
+
+https://pypi.org/project/Spiders/
 
 # Usage
 

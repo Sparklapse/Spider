@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="Spider",
+    name="Spiders",
     version="0.1.0",
     author="mr-josh",
     author_email="mr-josh@sparklapse.com",
-    url="https://github.com/Sparklapse/Spider",
+    url="https://github.com/Sparklapse/Spiders",
     description="Asynchronous python server",
     long_description=open("./docs/README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
