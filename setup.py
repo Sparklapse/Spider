@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="Spider-Sparklapse",
-    version="1.0.0",
+    name="Spider",
+    version="0.1.0",
     author="mr-josh",
     author_email="mr-josh@sparklapse.com",
     url="https://github.com/Sparklapse/Spider",
