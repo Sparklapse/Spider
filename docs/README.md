@@ -1,5 +1,5 @@
 # Spiders
-V: `0.1.0`<br>
+V: `0.1.1`<br>
 An asynchronous server made in pure python
 
 # Installation

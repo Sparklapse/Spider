@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="Spiders",
-    version="0.1.0",
+    version="0.1.1",
     author="mr-josh",
     author_email="mr-josh@sparklapse.com",
     url="https://github.com/Sparklapse/Spiders",
